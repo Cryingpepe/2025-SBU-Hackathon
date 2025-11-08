@@ -7,6 +7,24 @@ const SECURITY_TIPS = [
   'Lock unattended workstations within 60 seconds to protect PHI.',
   'Report lost or stolen devices to Security within 15 minutes.',
   'Store PHI only in encrypted, hospital-approved systems.',
+  // "Familiarize yourself with the SBUH Corporate Compliance Code of Conduct.",
+  // "Participate in annual compliance training to stay updated on policies.",
+  // "If you have compliance concerns, report them to your supervisor or the Chief Compliance Officer.",
+  "Always safeguard Protected Health Information (PHI) to comply with HIPAA regulations.",
+  // "Do not accept gifts of cash or cash equivalents, regardless of value.",
+  // "Only accept items of nominal value (under $15) that cannot be construed as influencing your decisions.",
+  "Use secure methods to communicate sensitive information, such as encrypted emails.",
+  "Properly dispose of documents containing PHI to prevent unauthorized access.",
+  "Ensure that only authorized personnel have access to sensitive areas and information.",
+  // "Disclose any potential conflicts of interest to maintain transparency.",
+  // "Be vigilant against fraud, waste, and abuse in healthcare practices.",
+  // "Adhere to ethical standards in research to avoid misconduct like fabrication or plagiarism.",
+  "Create strong, unique passwords for all accounts and change them regularly.",
+  "Enable two-factor authentication for additional security on sensitive accounts.",
+  "Be cautious of phishing attempts and verify the identity of unknown contacts.",
+  // "Familiarize yourself with emergency procedures for reporting security breaches.",
+  // "Ensure that all contractors and vendors comply with SBUH’s Code of Conduct.",
+  // "Participate in regular audits to ensure compliance with policies and procedures.",
 ]
 
 type HomePageProps = {
@@ -42,25 +60,25 @@ const ISSUE_OPTIONS: Array<{
   title: string
   description: string
 }> = [
-  {
-    type: 'phishing',
-    icon: '📧',
-    title: 'Phishing Email',
-    description: 'Suspicious emails requesting personal information or credentials.',
-  },
-  {
-    type: 'strange-login',
-    icon: '🔐',
-    title: 'Strange Login Attempt',
-    description: 'Unexpected login alerts or account access from unknown devices.',
-  },
-  {
-    type: 'lost-device',
-    icon: '📱',
-    title: 'Lost or Stolen Device',
-    description: 'Company or hospital devices that are missing or stolen.',
-  },
-]
+    {
+      type: 'phishing',
+      icon: '📧',
+      title: 'Phishing Email',
+      description: 'Suspicious emails requesting personal information or credentials.',
+    },
+    {
+      type: 'strange-login',
+      icon: '🔐',
+      title: 'Strange Login Attempt',
+      description: 'Unexpected login alerts or account access from unknown devices.',
+    },
+    {
+      type: 'lost-device',
+      icon: '📱',
+      title: 'Lost or Stolen Device',
+      description: 'Company or hospital devices that are missing or stolen.',
+    },
+  ]
 
 const ISSUE_LABELS: Record<ReportIssueType, string> = {
   phishing: 'Phishing Email',
