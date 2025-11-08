@@ -11,7 +11,7 @@ type Message = {
   isSuspicious?: boolean
 }
 
-type ReportIssueType = 'phishing' | 'strange-login' | 'lost-device'
+type ReportIssueType = 'phishing' | 'strange-login' | 'lost-device' | 'terror-threat'
 
 type ReportDialogContext = {
   flaggedMessage: string
@@ -20,10 +20,6 @@ type ReportDialogContext = {
   ticketId?: string
   timestamp?: string
   details?: string
-}
-
-type ParsedReportPayload = ReportDialogContext & {
-  shouldTrigger: boolean
 }
 
 type ReportModalProps = {
@@ -62,34 +58,19 @@ const ISSUE_OPTIONS: Array<{
     title: 'Lost or Stolen Device',
     description: 'Company or hospital devices that are missing or stolen.',
   },
+  {
+    type: 'terror-threat',
+    icon: '🚨',
+    title: 'Terror Threat',
+    description: 'Potential terror threats or suspicious activities requiring immediate attention.',
+  },
 ]
 
 const ISSUE_LABELS: Record<ReportIssueType, string> = {
   phishing: 'Phishing Email',
   'strange-login': 'Strange Login Attempt',
   'lost-device': 'Lost or Stolen Device',
-}
-
-const normalizeIssueType = (value: unknown): ReportIssueType | undefined => {
-  if (typeof value !== 'string') {
-    return undefined
-  }
-
-  const lower = value.trim().toLowerCase()
-
-  if (lower.includes('phish')) {
-    return 'phishing'
-  }
-
-  if (lower.includes('login') || lower.includes('credential') || lower.includes('account')) {
-    return 'strange-login'
-  }
-
-  if (lower.includes('lost') || lower.includes('stolen') || lower.includes('device')) {
-    return 'lost-device'
-  }
-
-  return undefined
+  'terror-threat': 'Terror Threat',
 }
 
 const generateTicketId = () => {
@@ -115,111 +96,13 @@ const formatTimestamp = (value?: string) => {
   })
 }
 
-const parseReportPayload = (payload: unknown, flaggedMessage: string): ParsedReportPayload => {
-  const base: ParsedReportPayload = {
-    shouldTrigger: false,
-    flaggedMessage,
-  }
-
-  if (!payload || typeof payload !== 'object') {
-    return base
-  }
-
-  const root = payload as Record<string, unknown>
-  const candidateObjects: Array<Record<string, unknown>> = []
-
-  const reportFields = ['report', 'shouldReport', 'flagged', 'needsReview']
-  for (const key of reportFields) {
-    const value = root[key]
-    if (typeof value === 'boolean' && value) {
-      base.shouldTrigger = true
-    } else if (typeof value === 'object' && value !== null) {
-      candidateObjects.push(value as Record<string, unknown>)
-    }
-  }
-
-  if (typeof root.moderation === 'object' && root.moderation !== null) {
-    candidateObjects.push(root.moderation as Record<string, unknown>)
-  }
-
-  if (typeof root.alert === 'object' && root.alert !== null) {
-    candidateObjects.push(root.alert as Record<string, unknown>)
-  }
-
-  const issueTypeCandidate = normalizeIssueType(root.issueType ?? root.category ?? root.type)
-  if (issueTypeCandidate) {
-    base.issueType = issueTypeCandidate
-  }
-
-  if (typeof root.reportReason === 'string') {
-    base.reason = root.reportReason
-  } else if (typeof root.reason === 'string') {
-    base.reason = root.reason
-  }
-
-  if (typeof root.reportDetails === 'string') {
-    base.details = root.reportDetails
-  }
-
-  if (typeof root.ticketId === 'string') {
-    base.ticketId = root.ticketId
-  }
-
-  if (typeof root.timestamp === 'string') {
-    base.timestamp = root.timestamp
-  }
-
-  const checkCandidate = (candidate: Record<string, unknown>) => {
-    if (typeof candidate.trigger === 'boolean' && candidate.trigger) {
-      base.shouldTrigger = true
-    }
-
-    if (typeof candidate.shouldReport === 'boolean' && candidate.shouldReport) {
-      base.shouldTrigger = true
-    }
-
-    const issue = normalizeIssueType(candidate.issueType ?? candidate.category ?? candidate.type)
-    if (issue) {
-      base.issueType = issue
-    }
-
-    if (typeof candidate.reason === 'string' && !base.reason) {
-      base.reason = candidate.reason
-    }
-
-    if (typeof candidate.details === 'string' && !base.details) {
-      base.details = candidate.details
-    }
-
-    if (typeof candidate.ticketId === 'string' && !base.ticketId) {
-      base.ticketId = candidate.ticketId
-    }
-
-    if (typeof candidate.timestamp === 'string' && !base.timestamp) {
-      base.timestamp = candidate.timestamp
-    }
-  }
-
-  for (const candidate of candidateObjects) {
-    checkCandidate(candidate)
-  }
-
-  if (!base.ticketId) {
-    base.ticketId = generateTicketId()
-  }
-
-  if (!base.timestamp) {
-    base.timestamp = formatTimestamp()
-  }
-
-  return base
-}
-
 const ReportModal = ({ isOpen, onClose, context }: ReportModalProps) => {
   const [selectedIssue, setSelectedIssue] = useState<ReportIssueType | null>(null)
   const [details, setDetails] = useState<string>('')
   const [mode, setMode] = useState<'form' | 'success'>('form')
   const [submission, setSubmission] = useState<ReportSubmission | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isOpen) {
@@ -227,6 +110,8 @@ const ReportModal = ({ isOpen, onClose, context }: ReportModalProps) => {
       setDetails('')
       setMode('form')
       setSubmission(null)
+      setIsSubmitting(false)
+      setSubmitError(null)
       return
     }
 
@@ -240,25 +125,89 @@ const ReportModal = ({ isOpen, onClose, context }: ReportModalProps) => {
     }
     setMode('form')
     setSubmission(null)
+    setIsSubmitting(false)
+    setSubmitError(null)
   }, [context?.details, context?.flaggedMessage, context?.issueType, context?.reason, isOpen])
 
   if (!isOpen) {
     return null
   }
 
-  const canSubmit = Boolean(selectedIssue) && details.trim().length > 0
+  const canSubmit = Boolean(selectedIssue) && details.trim().length > 0 && !isSubmitting
 
-  const handleSubmit = () => {
-    if (!selectedIssue || !context) {
+  const handleSubmit = async () => {
+    if (!selectedIssue || !context || isSubmitting) {
       return
     }
 
-    setSubmission({
-      issueType: selectedIssue,
-      ticketId: context.ticketId ?? generateTicketId(),
-      timestamp: formatTimestamp(context.timestamp),
-    })
-    setMode('success')
+    setIsSubmitting(true)
+    setSubmitError(null)
+
+    const fallbackTicketId = context.ticketId ?? generateTicketId()
+    const fallbackTimestamp = formatTimestamp(context.timestamp)
+
+    try {
+      const response = await fetch(REPORT_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          issue_type: ISSUE_LABELS[selectedIssue],
+          title:
+            (context.flaggedMessage?.length ?? 0) > 0
+              ? context.flaggedMessage.slice(0, 140)
+              : 'Suspicious report submitted from chatbot',
+          description: details.trim(),
+        }),
+      })
+
+      if (!response.ok) {
+        let errorPayload = ''
+        try {
+          errorPayload = await response.text()
+        } catch (readError) {
+          console.error('Failed to read error response body', readError)
+        }
+
+        console.error('Report submission failed', response.status, errorPayload)
+
+        const trimmed = errorPayload.trim()
+        const friendlyError =
+          trimmed.length > 0 ? trimmed : `Report submission failed with status ${response.status}`
+        throw new Error(friendlyError)
+      }
+
+      let data: Record<string, unknown> | null = null
+      try {
+        data = (await response.json()) as Record<string, unknown>
+      } catch {
+        data = null
+      }
+
+      const apiTicketId =
+        data && typeof data.ticket_id === 'string' ? data.ticket_id.trim() : ''
+      const ticketId =
+        (apiTicketId.length > 0 && apiTicketId) || fallbackTicketId
+
+      const apiTimestamp =
+        data && typeof data.created_at === 'string' ? data.created_at.trim() : ''
+      const timestamp =
+        (apiTimestamp.length > 0 && apiTimestamp) || fallbackTimestamp
+
+      setSubmission({
+        issueType: selectedIssue,
+        ticketId,
+        timestamp: formatTimestamp(timestamp),
+      })
+      setMode('success')
+    } catch (error) {
+      console.error('Failed to submit report', error)
+      const message = error instanceof Error ? error.message : 'Failed to submit the report. Please try again.'
+      setSubmitError(message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -295,6 +244,7 @@ const ReportModal = ({ isOpen, onClose, context }: ReportModalProps) => {
                     type="button"
                     className={`report-option ${selectedIssue === option.type ? 'selected' : ''}`}
                     onClick={() => setSelectedIssue(option.type)}
+                    disabled={isSubmitting}
                   >
                     <span className="report-option-icon">{option.icon}</span>
                     <span className="report-option-text">
@@ -315,22 +265,21 @@ const ReportModal = ({ isOpen, onClose, context }: ReportModalProps) => {
                     value={details}
                     onChange={(event) => setDetails(event.target.value)}
                     placeholder="Include any details that will help our security team investigate."
+                    wrap="soft"
+                    disabled={isSubmitting}
                   />
                 </div>
               )}
             </div>
 
+            {submitError && <p className="report-error-message">{submitError}</p>}
+
             <footer className="report-modal-actions">
-              <button type="button" className="report-secondary" onClick={onClose}>
+              <button type="button" className="report-secondary" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </button>
-              <button
-                type="button"
-                className="report-primary"
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-              >
-                Submit Report
+              <button type="button" className="report-primary" onClick={handleSubmit} disabled={!canSubmit}>
+                {isSubmitting ? 'Submitting…' : 'Submit Report'}
               </button>
             </footer>
           </>
@@ -373,6 +322,7 @@ const ReportModal = ({ isOpen, onClose, context }: ReportModalProps) => {
 const BOT_NAME = 'Hackerton Bot'
 const API_BASE_URL = 'https://stagingapi.neuralseek.com/v1/stony36'
 const API_KEY = import.meta.env.VITE_NEURALSEEK_API_KEY ?? 'e24f8a05-e4fe85b2-3e859a20-6186b503'
+const REPORT_API_URL = import.meta.env.VITE_REPORT_API_URL ?? 'http://10.18.124.162:3001/api/reports'
 
 const initialMessages: Message[] = [
   {
