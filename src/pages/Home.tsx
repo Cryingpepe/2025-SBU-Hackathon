@@ -297,14 +297,6 @@ const HomePage = ({ userName = 'Alex' }: HomePageProps) => {
             </button>
           </div>
 
-          <section className="home-demo">
-            <h2 className="home-demo-title">Demo checklist</h2>
-            <ol>
-              <li>Show NeuralSeek answering PHI email policy questions with citations.</li>
-              <li>Escalate a suspicious message through the report workflow.</li>
-              <li>Finish with proactive coaching using the daily security tip.</li>
-            </ol>
-          </section>
         </main>
 
         <footer className="home-footer">
