@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { FormEvent } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
+import HomePage from './pages/Home'
+import ChatPage from './pages/Chat'
 
 type Sender = 'user' | 'bot'
 
