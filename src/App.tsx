@@ -396,6 +396,7 @@ function App() {
   const [reportModalOpen, setReportModalOpen] = useState(false)
   const [reportContext, setReportContext] = useState<ReportDialogContext | null>(null)
   const scrollAnchorRef = useRef<HTMLDivElement | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
 
   const canSend = useMemo(() => input.trim().length > 0 && !isWaiting, [input, isWaiting])
 
@@ -580,6 +581,10 @@ function App() {
       setErrorMessage('Failed to fetch a response from NeuralSeek.')
     } finally {
       setIsWaiting(false)
+      // Focus the input field after all state updates are complete
+      requestAnimationFrame(() => {
+        inputRef.current?.focus()
+      })
     }
   }
 
@@ -666,6 +671,7 @@ function App() {
           <form className="chat-input" onSubmit={handleSubmit}>
             <input
               type="text"
+              ref={inputRef}
               placeholder="Type your message..."
               value={input}
               onChange={(event) => setInput(event.target.value)}
