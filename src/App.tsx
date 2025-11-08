@@ -8,6 +8,7 @@ type Message = {
   id: string
   sender: Sender
   text: string
+  isSuspicious?: boolean
 }
 
 type ReportIssueType = 'phishing' | 'strange-login' | 'lost-device'
@@ -552,6 +553,7 @@ function App() {
         id: `bot-${Date.now()}`,
         sender: 'bot',
         text: botReply,
+        isSuspicious: isSuspicious
       })
 
       if (isSuspicious) {
@@ -560,11 +562,10 @@ function App() {
 
       setErrorMessage(null)
 
-      const parsedReport = parseReportPayload(data, trimmed)
+      // No longer automatically trigger report modal for suspicious messages
+      // Keep the console log for debugging purposes
       if (isSuspicious) {
-        const { shouldTrigger: _ignored, ...contextData } = parsedReport
-        setReportContext(contextData)
-        setReportModalOpen(true)
+        console.log('Suspicious message detected')
       }
     } catch (error) {
       console.error(error)
@@ -610,6 +611,19 @@ function App() {
                 <div className="bubble">
                   {message.sender === 'bot' && <span className="sender-label">{BOT_NAME}</span>}
                   <p>{message.text}</p>
+                  {message.sender === 'bot' && message.isSuspicious && (
+                    <button
+                      type="button"
+                      className="report-message-button"
+                      onClick={() => {
+                        setReportContext({ flaggedMessage: message.text });
+                        setReportModalOpen(true);
+                      }}
+                      aria-label="Report this message"
+                    >
+                      🚨 Report
+                    </button>
+                  )}
                 </div>
               </li>
             ))}

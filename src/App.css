@@ -639,3 +639,24 @@
     padding: 14px 0;
   }
 }
+
+.report-message-button {
+  align-self: flex-end;
+  margin-top: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(178, 34, 34, 0.3);
+  background: rgba(178, 34, 34, 0.1);
+  color: #b22222;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.report-message-button:hover {
+  background: rgba(178, 34, 34, 0.15);
+  transform: translateY(-1px);
+}
