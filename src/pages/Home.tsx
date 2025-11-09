@@ -94,16 +94,6 @@ const HomePage = ({ userName = 'Alex' }: HomePageProps) => {
           </div>
 
         </main>
-
-        <footer className="home-footer">
-          <button type="button" className="link-button">
-            Help Center
-          </button>
-          <span aria-hidden="true">•</span>
-          <button type="button" className="link-button">
-            IT Support
-          </button>
-        </footer>
       </div>
 
       <ReportModal

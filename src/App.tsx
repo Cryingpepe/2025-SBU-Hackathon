@@ -6,7 +6,6 @@ import MyReportsPage from './pages/MyReports'
 
 const GlobalNav = () => {
   const navigate = useNavigate()
-  const location = useLocation()
 
   const handleOpenReport = () => {
     window.dispatchEvent(
@@ -19,8 +18,6 @@ const GlobalNav = () => {
     )
   }
 
-  const isActive = (path: string) => location.pathname === path
-
   return (
     <header className="global-nav">
       <button type="button" className="global-nav__brand" onClick={() => navigate('/')}>
@@ -30,22 +27,7 @@ const GlobalNav = () => {
         <span className="brand-name">SecureSBU</span>
       </button>
 
-      <nav className="global-nav__links" aria-label="Primary navigation">
-        <button
-          type="button"
-          className={`global-nav__link ${isActive('/') ? 'active' : ''}`}
-          onClick={() => navigate('/')}
-        >
-          Home
-        </button>
-        <button
-          type="button"
-          className={`global-nav__link ${location.pathname.startsWith('/reports') ? 'active' : ''}`}
-          onClick={() => navigate('/reports')}
-        >
-          My Reports
-        </button>
-      </nav>
+      <nav className="global-nav__links" aria-label="Primary navigation" />
 
       <div className="global-nav__cta">
         <button
@@ -55,9 +37,14 @@ const GlobalNav = () => {
         >
           Report Suspicious Activity
         </button>
-        <div className="avatar-badge" aria-hidden="true">
+        <button
+          type="button"
+          className="avatar-badge"
+          onClick={() => navigate('/reports')}
+          aria-label="View my reports"
+        >
           A
-        </div>
+        </button>
       </div>
     </header>
   )
