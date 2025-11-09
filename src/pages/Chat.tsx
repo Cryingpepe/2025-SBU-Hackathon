@@ -323,7 +323,7 @@ const ReportModal = ({ isOpen, onClose, context }: ReportModalProps) => {
   )
 }
 
-const BOT_NAME = 'Hackerton Bot'
+const BOT_NAME = 'SBUH Helper'
 const API_BASE_URL = import.meta.env.VITE_NEURALSEEK_API_BASE ?? ''
 const API_KEY = import.meta.env.VITE_NEURALSEEK_API_KEY ?? ''
 const REPORT_API_URL = import.meta.env.VITE_REPORT_API_URL ?? ''
@@ -546,8 +546,8 @@ function Chat() {
       <div className="chat-container">
         <header className="chat-header">
           <div>
-            <h1>Hackerton Assistant</h1>
-            <p>Chatbot frontend demo built with React & Vite</p>
+            <h1>SBUH Helper</h1>
+            <p>Your AI assistant to help with SBUH policies, compliance, and clinical guidelines.</p>
           </div>
           <span className="status-indicator">
             <span className={`status-dot ${isWaiting ? 'busy' : 'ready'}`} />
