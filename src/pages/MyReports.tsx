@@ -20,6 +20,11 @@ type ReportsResponse = {
     totalPages?: number
     currentPage?: number
   }
+  meta?: {
+    total?: number
+    total_pages?: number
+    current_page?: number
+  }
 }
 
 type StatusFilterKey = 'all' | 'Pending Review' | 'In Progress' | 'Resolved'
@@ -132,6 +137,51 @@ const buildPageArray = (totalPages: number, currentPage: number) => {
   return Array.from(pages).sort((a, b) => a - b)
 }
 
+type LegacyPagination = NonNullable<ReportsResponse['pagination']>
+type MetaPagination = NonNullable<ReportsResponse['meta']>
+
+const extractPagination = (payload: ReportsResponse & Record<string, unknown>): LegacyPagination | MetaPagination | null => {
+  const candidateValues: unknown[] = []
+  if (payload.pagination && typeof payload.pagination === 'object') {
+    candidateValues.push(payload.pagination)
+  }
+  if (payload.meta && typeof payload.meta === 'object') {
+    candidateValues.push(payload.meta)
+  }
+
+  for (const candidate of candidateValues) {
+    if (!candidate || typeof candidate !== 'object') {
+      continue
+    }
+
+    if ('totalResults' in candidate || 'totalPages' in candidate || 'currentPage' in candidate) {
+      return candidate as LegacyPagination
+    }
+
+    if ('total' in candidate || 'total_pages' in candidate || 'current_page' in candidate) {
+      return candidate as MetaPagination
+    }
+  }
+
+  return null
+}
+
+const parseJsonSafely = async (response: Response) => {
+  const text = await response.text()
+  const trimmed = text.trim()
+
+  if (trimmed.length === 0) {
+    return {}
+  }
+
+  try {
+    return JSON.parse(trimmed) as ReportsResponse | Record<string, unknown>
+  } catch (error) {
+    console.error('Reports API returned non-JSON payload:', trimmed.slice(0, 200))
+    throw new Error('Report API did not return valid JSON.')
+  }
+}
+
 const MyReports = () => {
   const [reports, setReports] = useState<ReportRecord[]>([])
   const [totalResults, setTotalResults] = useState(0)
@@ -158,10 +208,14 @@ const MyReports = () => {
         const url = new URL(REPORTS_API_URL)
         url.searchParams.set('page', currentPage.toString())
         url.searchParams.set('limit', pageSize.toString())
+        if (url.hostname.includes('ngrok')) {
+          url.searchParams.set('ngrok-skip-browser-warning', 'true')
+        }
 
         const response = await fetch(url.toString(), {
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
         })
 
@@ -169,14 +223,41 @@ const MyReports = () => {
           throw new Error(`Failed to load reports (${response.status})`)
         }
 
-        const payload = (await response.json()) as ReportsResponse
-        const normalized = (payload.data ?? [])
+        const payload = (await parseJsonSafely(response)) as ReportsResponse & Record<string, unknown>
+        const rawCollection =
+          Array.isArray(payload.data)
+            ? payload.data
+            : Array.isArray((payload as { reports?: RawReport[] }).reports)
+              ? (payload as { reports?: RawReport[] }).reports ?? []
+              : []
+
+        const normalized = rawCollection
           .map((item) => normalizeReport(item))
           .filter((item): item is ReportRecord => item !== null)
 
         setReports(normalized)
-        setTotalResults(payload.pagination?.totalResults ?? normalized.length)
-        setTotalPages(payload.pagination?.totalPages ?? Math.max(1, Math.ceil(normalized.length / pageSize)))
+        const paginationData = extractPagination(payload)
+
+        const resolvedTotal =
+          (paginationData && 'totalResults' in paginationData && typeof paginationData.totalResults === 'number'
+            ? paginationData.totalResults
+            : undefined) ??
+          (paginationData && 'total' in paginationData && typeof paginationData.total === 'number'
+            ? paginationData.total
+            : undefined) ??
+          normalized.length
+
+        const resolvedTotalPages =
+          (paginationData && 'totalPages' in paginationData && typeof paginationData.totalPages === 'number'
+            ? paginationData.totalPages
+            : undefined) ??
+          (paginationData && 'total_pages' in paginationData && typeof paginationData.total_pages === 'number'
+            ? paginationData.total_pages
+            : undefined) ??
+          Math.max(1, Math.ceil(resolvedTotal / pageSize))
+
+        setTotalResults(resolvedTotal)
+        setTotalPages(resolvedTotalPages)
       } catch (error) {
         console.error('Failed to load reports', error)
         const message = error instanceof Error ? error.message : 'Unknown error occurred.'
