@@ -69,7 +69,7 @@ const ISSUE_OPTIONS: Array<{
 ]
 
 const ISSUE_LABELS: Record<ReportIssueType, string> = {
-  phishing: 'Phishing Email',
+  'phishing': 'Phishing Email',
   'strange-login': 'Strange Login Attempt',
   'lost-device': 'Lost or Stolen Device',
   'terror-threat': 'Terror Threat',
