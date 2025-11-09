@@ -64,7 +64,24 @@ const normalizeReport = (item: RawReport): ReportRecord | null => {
   const issueType = readString(['issue_type', 'issueType', 'IssueType'])
   const title = readString(['title', 'Title'])
   const description = readString(['description', 'Description'])
-  const status = readString(['status', 'Status'])
+  const rawStatus = readString(['status', 'Status'])
+  const status = (() => {
+    if (rawStatus.length === 0) {
+      return 'Pending Review'
+    }
+
+    const lowered = rawStatus.toLowerCase()
+    if (lowered === 'resolved') {
+      return 'Resolved'
+    }
+    if (lowered === 'in progress' || lowered === 'in_progress') {
+      return 'In Progress'
+    }
+    if (lowered === 'pending review' || lowered === 'pending_review' || lowered === 'pending') {
+      return 'Pending Review'
+    }
+    return rawStatus
+  })()
   const createdAt = readString(['created_at', 'createdAt', 'dateSubmitted', 'DateSubmitted'])
 
   if (ticketId.length === 0) {
@@ -85,7 +102,7 @@ const normalizeReport = (item: RawReport): ReportRecord | null => {
     issueType,
     title: title || 'Untitled Report',
     description,
-    status: status || 'Pending Review',
+    status,
     createdAt: createdAt || new Date().toISOString(),
     location: locationValue,
   }
@@ -309,8 +326,10 @@ const MyReports = () => {
     })
   }, [reports, activeStatus, searchTerm])
 
-  const startIndex = totalResults === 0 ? 0 : (currentPage - 1) * pageSize + 1
-  const endIndex = totalResults === 0 ? 0 : startIndex + filteredReports.length - 1
+  const hasActiveFilters = activeStatus !== 'all' || searchTerm.trim().length > 0
+  const displayedTotal = hasActiveFilters ? filteredReports.length : totalResults
+  const startIndex = displayedTotal === 0 ? 0 : hasActiveFilters ? 1 : (currentPage - 1) * pageSize + 1
+  const endIndex = displayedTotal === 0 ? 0 : startIndex + filteredReports.length - 1
 
   const pageNumbers = buildPageArray(totalPages, currentPage)
 
@@ -436,7 +455,7 @@ const MyReports = () => {
 
       <footer className="reports-footer">
         <p className="reports-results-count">
-          Showing {startIndex} to {endIndex} of {totalResults} results
+          Showing {startIndex} to {endIndex} of {displayedTotal} results
         </p>
         <nav className="reports-pagination" aria-label="Reports pagination">
           <button
@@ -508,7 +527,7 @@ const MyReports = () => {
               ×
             </button>
             <header className="reports-detail-header">
-              <h2 id="report-detail-heading">{selectedReport.title}</h2>
+              <h2 id="report-detail-heading">Issue Type: {selectedReport.issueType}</h2>
               <span className={getStatusClassName(selectedReport.status)}>{selectedReport.status}</span>
             </header>
             <dl className="reports-detail-list">
