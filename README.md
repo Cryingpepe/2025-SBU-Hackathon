@@ -69,7 +69,7 @@ export default defineConfig([
       // other options...
     },
   },
-
+```
 ### NeuroSeek Agent
 We are using NeuroSeek to use backend, and chatBot service.
 If you search ChatBot2.txt in our repo, this is the agent we used for SBU Hackathon.
