@@ -342,10 +342,6 @@ const MyReports = () => {
           <h1 className="reports-title">My Submitted Reports</h1>
           <p className="reports-subtitle">Track the progress of every security report you have submitted.</p>
         </div>
-
-        <button type="button" className="reports-new-button" onClick={handleNewReportClick}>
-          <span aria-hidden="true">＋</span> New Report
-        </button>
       </header>
 
       <section className="reports-controls">
@@ -416,7 +412,6 @@ const MyReports = () => {
                   <td>
                     <div className="reports-issue">
                       <span className="reports-issue__label">{report.issueType}</span>
-                      <p className="reports-issue__title">{report.title}</p>
                     </div>
                   </td>
                   <td>{formatDisplayDate(report.createdAt)}</td>
